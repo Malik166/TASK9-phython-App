@@ -1,0 +1,39 @@
+name: Deploy Python App to EC2
+
+on:
+  push:
+    branches: [ "main" ]   # make sure your branch is 'main'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # (Optional) Verify files in runner logs
+    - name: List files
+      run: ls -la
+
+    - name: Copy files to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        source: "."
+        target: "/var/www/pythonapp"
+        overwrite: true
+        strip_components: 0
+
+    - name: Restart python service
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          sudo systemctl daemon-reload
+          sudo systemctl restart pythonapp
+          sudo systemctl status pythonapp --no-pager
